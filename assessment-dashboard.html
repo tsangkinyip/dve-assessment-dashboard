@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assessment Results Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #f5f2ee;
+    --surface: #ffffff;
+    --border: #e2ddd8;
+    --text: #1a1714;
+    --muted: #7a736b;
+    --EX: #2d6a4f;
+    --M:  #52b788;
+    --P:  #95d5b2;
+    --MF: #f4a261;
+    --FU: #e76f51;
+    --IA2: #c1121f;
+    --TA-stripe: rgba(45,106,79,0.07);
+    --IA-stripe: rgba(231,111,81,0.07);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 400;
+    min-height: 100vh;
+    padding: 40px 24px 60px;
+  }
+
+  header {
+    max-width: 1100px;
+    margin: 0 auto 36px;
+    border-bottom: 2px solid var(--text);
+    padding-bottom: 20px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.1rem;
+    line-height: 1.1;
+    font-weight: 400;
+  }
+
+  h1 span { color: var(--EX); }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-weight: 300;
+    margin-top: 4px;
+  }
+
+  /* Filters */
+  .filters {
+    max-width: 1100px;
+    margin: 0 auto 28px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .filter-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-right: 4px;
+  }
+
+  .pill {
+    padding: 6px 16px;
+    border-radius: 99px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.18s;
+    color: var(--text);
+  }
+
+  .pill:hover { border-color: var(--text); }
+  .pill.active { background: var(--text); color: #fff; border-color: var(--text); }
+
+  /* Grid */
+  .grid {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px 24px 20px;
+    animation: fadeIn 0.4s ease both;
+  }
+
+  .card.wide { grid-column: 1 / -1; }
+
+  .card-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.05rem;
+    font-weight: 400;
+    margin-bottom: 4px;
+  }
+
+  .card-sub {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-bottom: 18px;
+  }
+
+  canvas { width: 100% !important; }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    margin-top: 14px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  /* KPI row */
+  .kpi-row {
+    max-width: 1100px;
+    margin: 0 auto 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
+  }
+
+  .kpi {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    animation: fadeIn 0.3s ease both;
+  }
+
+  .kpi-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .kpi-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.9rem;
+    line-height: 1;
+  }
+
+  .kpi-sub {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* TA vs IA comparison table */
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+  }
+
+  .compare-table th {
+    text-align: left;
+    padding: 8px 10px;
+    font-weight: 600;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .compare-table td {
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+
+  .compare-table tr:last-child td { border-bottom: none; }
+  .compare-table tr.ta-row td { background: var(--TA-stripe); }
+  .compare-table tr.ia-row td { background: var(--IA-stripe); }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 99px;
+    font-size: 0.7rem;
+    font-weight: 600;
+  }
+
+  .badge-ta { background: rgba(45,106,79,0.15); color: var(--EX); }
+  .badge-ia { background: rgba(231,111,81,0.15); color: var(--FU); }
+
+  .bar-inline {
+    height: 6px;
+    border-radius: 99px;
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 6px;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Assessment <span>Results</span> Dashboard</h1>
+    <div class="subtitle">Module performance breakdown · TA vs IA · Grade distribution</div>
+  </div>
+  <div style="font-size:0.78rem;color:var(--muted);text-align:right;">EX = Excellent &nbsp;|&nbsp; M = Merit &nbsp;|&nbsp; P = Pass &nbsp;|&nbsp; MF = Marginal Fail &nbsp;|&nbsp; F/U = Fail</div>
+</header>
+
+<!-- Filters -->
+<div class="filters">
+  <span class="filter-label">Module:</span>
+  <button class="pill active" onclick="setFilter('all')">All</button>
+  <button class="pill" onclick="setFilter('VEN1101')">VEN1101</button>
+  <button class="pill" onclick="setFilter('VEN1102')">VEN1102</button>
+  <button class="pill" onclick="setFilter('VEN1103')">VEN1103</button>
+  <button class="pill" onclick="setFilter('VEN2101')">VEN2101</button>
+</div>
+
+<!-- KPI row -->
+<div class="kpi-row" id="kpi-row"></div>
+
+<!-- Charts grid -->
+<div class="grid">
+  <div class="card wide">
+    <div class="card-title">Grade Distribution by Module & Assessment Type</div>
+    <div class="card-sub">Percentage of students per grade band — TA (solid) vs IA (hatched)</div>
+    <canvas id="chartGrouped" height="110"></canvas>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--EX)"></div>EX – Excellent</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--M)"></div>M – Merit</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--P)"></div>P – Pass</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--MF)"></div>MF – Marginal Fail</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--FU)"></div>F/U – Fail</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Pass Rate: TA vs IA</div>
+    <div class="card-sub">% of students achieving EX, M, or P</div>
+    <canvas id="chartPass" height="200"></canvas>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Fail Rate: TA vs IA</div>
+    <div class="card-sub">% of students with MF or F/U</div>
+    <canvas id="chartFail" height="200"></canvas>
+  </div>
+
+  <div class="card wide">
+    <div class="card-title">IA Students ≥2 Levels Below TA</div>
+    <div class="card-sub">Number of students who scored significantly lower on IA vs TA — a key quality flag</div>
+    <canvas id="chartBelow" height="80"></canvas>
+  </div>
+
+  <div class="card wide">
+    <div class="card-title">Detailed Comparison Table</div>
+    <div class="card-sub">All rows from the original data</div>
+    <table class="compare-table" id="detailTable"></table>
+  </div>
+</div>
+
+<script>
+const RAW = [
+  // VEN1101 - no data
+  { mod:'VEN1101', ay:'2425/S2', type:'TA', n:null, EX:null, M:null, P:null, MF:null, FU:null, below:null },
+  { mod:'VEN1101', ay:'2425/S2', type:'IA', n:null, EX:null, M:null, P:null, MF:null, FU:null, below:null },
+  // VEN1102 2425/S1
+  { mod:'VEN1102', ay:'2425/S1', type:'TA', n:2073, EX:29.5, M:30.4, P:27.8, MF:7.3, FU:4.9, below:null },
+  { mod:'VEN1102', ay:'2425/S1', type:'IA', n:2288, EX:17.5, M:20.1, P:32.9, MF:13.1, FU:16.4, below:19.2 },
+  // VEN1102 2526/S1
+  { mod:'VEN1102', ay:'2526/S1', type:'TA', n:2096, EX:33.9, M:29.4, P:26.7, MF:6.1, FU:3.9, below:null },
+  { mod:'VEN1102', ay:'2526/S1', type:'IA', n:1969, EX:16.3, M:25.0, P:23.2, MF:23.2, FU:12.3, below:29.4 },
+  // VEN1103 2425/S1
+  { mod:'VEN1103', ay:'2425/S1', type:'TA', n:1100, EX:27.6, M:32.1, P:33.5, MF:4.9, FU:1.9, below:null },
+  { mod:'VEN1103', ay:'2425/S1', type:'IA', n:1063, EX:22.6, M:17.5, P:21.4, MF:19.1, FU:19.4, below:29.4 },
+  // VEN1103 2526/S1
+  { mod:'VEN1103', ay:'2526/S1', type:'TA', n:1297, EX:27.3, M:33.2, P:33.8, MF:2.96, FU:2.9, below:null },
+  { mod:'VEN1103', ay:'2526/S1', type:'IA', n:1234, EX:20.6, M:20.9, P:27.0, MF:16.0, FU:15.6, below:25.0 },
+  // VEN2101
+  { mod:'VEN2101', ay:'2425/S2', type:'TA', n:1024, EX:27.1, M:23.3, P:36.0, MF:6.7, FU:6.7, below:null },
+  { mod:'VEN2101', ay:'2425/S2', type:'IA', n:1114, EX:23.7, M:21.9, P:40.8, MF:3.1, FU:10.6, below:9.2 },
+];
+
+let currentFilter = 'all';
+let charts = {};
+
+function getData() {
+  return currentFilter === 'all' ? RAW.filter(d => d.n !== null) : RAW.filter(d => d.mod === currentFilter && d.n !== null);
+}
+
+function setFilter(f) {
+  currentFilter = f;
+  document.querySelectorAll('.pill').forEach(p => p.classList.toggle('active', p.textContent === (f === 'all' ? 'All' : f)));
+  renderAll();
+}
+
+const COLORS = { EX:'#2d6a4f', M:'#52b788', P:'#95d5b2', MF:'#f4a261', FU:'#e76f51' };
+const COLORS_IA = { EX:'#1b4332', M:'#2d6a4f', P:'#74c69d', MF:'#e76f51', FU:'#c1121f' };
+
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+function renderKPIs() {
+  const data = getData();
+  const ta = data.filter(d => d.type === 'TA');
+  const ia = data.filter(d => d.type === 'IA');
+  const avg = (arr, key) => arr.length ? (arr.reduce((s,d) => s + (d[key]||0), 0) / arr.length).toFixed(1) : '—';
+
+  const totalStudents = data.reduce((s,d) => s + (d.n||0), 0);
+  const taPass = avg(ta, 'EX') !== '—' ? (ta.reduce((s,d)=>s+(d.EX||0)+(d.M||0)+(d.P||0),0)/ta.length).toFixed(1) : '—';
+  const iaPass = ia.length ? (ia.reduce((s,d)=>s+(d.EX||0)+(d.M||0)+(d.P||0),0)/ia.length).toFixed(1) : '—';
+  const iaBelow = ia.filter(d=>d.below!==null);
+  const avgBelow = iaBelow.length ? (iaBelow.reduce((s,d)=>s+d.below,0)/iaBelow.length).toFixed(1) : '—';
+
+  const kpis = [
+    { label: 'Total Students', value: totalStudents.toLocaleString(), sub: 'across filtered data' },
+    { label: 'Avg TA Pass Rate', value: taPass + '%', sub: 'EX + M + P combined' },
+    { label: 'Avg IA Pass Rate', value: iaPass + '%', sub: 'EX + M + P combined' },
+    { label: 'Avg IA ≥2 Below TA', value: avgBelow + '%', sub: 'quality flag — lower is better' },
+  ];
+
+  document.getElementById('kpi-row').innerHTML = kpis.map((k,i) =>
+    `<div class="kpi" style="animation-delay:${i*0.06}s">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value">${k.value}</div>
+      <div class="kpi-sub">${k.sub}</div>
+    </div>`
+  ).join('');
+}
+
+function renderGrouped() {
+  destroyChart('grouped');
+  const data = getData();
+  const labels = data.map(d => `${d.mod} ${d.ay} ${d.type}`);
+  const grades = ['EX','M','P','MF','FU'];
+  const colors = [COLORS.EX, COLORS.M, COLORS.P, COLORS.MF, COLORS.FU];
+  const names = ['EX – Excellent','M – Merit','P – Pass','MF – Marginal Fail','F/U – Fail'];
+
+  const datasets = grades.map((g,i) => ({
+    label: names[i],
+    data: data.map(d => d[g] || 0),
+    backgroundColor: data.map(d => d.type === 'IA' ? colors[i] + 'bb' : colors[i]),
+    borderRadius: 4,
+    borderSkipped: false,
+  }));
+
+  charts['grouped'] = new Chart(document.getElementById('chartGrouped'), {
+    type: 'bar',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}%` } } },
+      scales: {
+        x: { stacked: true, ticks: { font: { size: 10 }, maxRotation: 45 }, grid: { display: false } },
+        y: { stacked: true, max: 100, ticks: { callback: v => v + '%', font: { size: 10 } }, grid: { color: '#e2ddd8' } }
+      }
+    }
+  });
+}
+
+function renderPass() {
+  destroyChart('pass');
+  const data = getData();
+  const ta = data.filter(d=>d.type==='TA');
+  const ia = data.filter(d=>d.type==='IA');
+  const taLabels = ta.map(d=>`${d.mod}\n${d.ay}`);
+  const iaLabels = ia.map(d=>`${d.mod}\n${d.ay}`);
+  const allLabels = [...new Set([...taLabels,...iaLabels])];
+
+  charts['pass'] = new Chart(document.getElementById('chartPass'), {
+    type: 'bar',
+    data: {
+      labels: ta.map(d=>`${d.mod} ${d.ay}`),
+      datasets: [
+        { label: 'TA Pass Rate', data: ta.map(d=>(d.EX+d.M+d.P).toFixed(1)), backgroundColor: '#2d6a4f', borderRadius: 6 },
+        { label: 'IA Pass Rate', data: ia.map(d=>(d.EX+d.M+d.P).toFixed(1)), backgroundColor: '#95d5b2', borderRadius: 6 },
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12 } }, tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}%` } } },
+      scales: {
+        x: { ticks: { font: { size: 9 }, maxRotation: 45 }, grid: { display: false } },
+        y: { max: 100, ticks: { callback: v=>v+'%', font:{size:10} }, grid: { color: '#e2ddd8' } }
+      }
+    }
+  });
+}
+
+function renderFail() {
+  destroyChart('fail');
+  const data = getData();
+  const ta = data.filter(d=>d.type==='TA');
+  const ia = data.filter(d=>d.type==='IA');
+
+  charts['fail'] = new Chart(document.getElementById('chartFail'), {
+    type: 'bar',
+    data: {
+      labels: ta.map(d=>`${d.mod} ${d.ay}`),
+      datasets: [
+        { label: 'TA Fail Rate', data: ta.map(d=>((d.MF||0)+(d.FU||0)).toFixed(1)), backgroundColor: '#f4a261', borderRadius: 6 },
+        { label: 'IA Fail Rate', data: ia.map(d=>((d.MF||0)+(d.FU||0)).toFixed(1)), backgroundColor: '#e76f51', borderRadius: 6 },
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12 } }, tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}%` } } },
+      scales: {
+        x: { ticks: { font: { size: 9 }, maxRotation: 45 }, grid: { display: false } },
+        y: { ticks: { callback: v=>v+'%', font:{size:10} }, grid: { color: '#e2ddd8' } }
+      }
+    }
+  });
+}
+
+function renderBelow() {
+  destroyChart('below');
+  const data = getData().filter(d=>d.type==='IA' && d.below !== null);
+
+  charts['below'] = new Chart(document.getElementById('chartBelow'), {
+    type: 'bar',
+    data: {
+      labels: data.map(d=>`${d.mod} ${d.ay}`),
+      datasets: [{
+        label: '% IA Students ≥2 Levels Below TA',
+        data: data.map(d=>d.below),
+        backgroundColor: data.map(d => d.below > 25 ? '#c1121f' : d.below > 15 ? '#e76f51' : '#f4a261'),
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y}% of students` } } },
+      scales: {
+        x: { ticks: { font: { size: 11 } }, grid: { display: false } },
+        y: { ticks: { callback: v=>v+'%', font:{size:10} }, grid: { color: '#e2ddd8' } }
+      }
+    }
+  });
+}
+
+function renderTable() {
+  const data = getData();
+  const grades = ['EX','M','P','MF','FU'];
+  const head = `<thead><tr>
+    <th>Module</th><th>AY/Sem</th><th>Type</th><th>Students</th>
+    <th>EX</th><th>M</th><th>P</th><th>MF</th><th>F/U</th><th>≥2 Below</th>
+  </tr></thead>`;
+  const rows = data.map(d => {
+    const cls = d.type === 'TA' ? 'ta-row' : 'ia-row';
+    const badge = `<span class="badge badge-${d.type.toLowerCase()}">${d.type}</span>`;
+    const cell = (v) => v !== null ? v.toFixed(1)+'%' : '—';
+    const belowCell = d.below !== null ? `<strong style="color:${d.below>25?'var(--FU)':d.below>15?'var(--MF)':'inherit'}">${d.below}%</strong>` : 'N.A.';
+    return `<tr class="${cls}">
+      <td><strong>${d.mod}</strong></td>
+      <td>${d.ay}</td>
+      <td>${badge}</td>
+      <td>${d.n ? d.n.toLocaleString() : '—'}</td>
+      <td>${cell(d.EX)}</td><td>${cell(d.M)}</td><td>${cell(d.P)}</td><td>${cell(d.MF)}</td><td>${cell(d.FU)}</td>
+      <td>${belowCell}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('detailTable').innerHTML = head + `<tbody>${rows}</tbody>`;
+}
+
+function renderAll() {
+  renderKPIs();
+  renderGrouped();
+  renderPass();
+  renderFail();
+  renderBelow();
+  renderTable();
+}
+
+renderAll();
+</script>
+</body>
+</html>
